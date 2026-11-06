@@ -73,11 +73,11 @@
         <button id="closeModal" class="close">✕</button>
         <div style="text-align: center; margin: 6px 0 10px 0; font-weight: 700">یک گیت انتخاب کنید</div>
         <div class="grid">
-          <div class="pick" data-gate="XOR"  title="XOR"><img src="../xor.png"  alt="XOR" /></div>
-          <div class="pick" data-gate="NAND" title="NAND"><img src="../nand.png" alt="NAND" /></div>
-          <div class="pick" data-gate="AND"  title="AND"><img src="../and.png"  alt="AND" /></div>
-          <div class="pick" data-gate="OR"   title="OR"><img src="../or.png"   alt="OR" /></div>
-          <div class="pick" data-gate="NOR"  title="NOR"><img src="../nor.png"  alt="NOR" /></div>
+          <div class="pick" data-gate="XOR"  title="XOR"><img src="/Rasta-summerschool403-hardware/games/LogicGatesTraine/xor.png"  alt="XOR" /></div>
+          <div class="pick" data-gate="NAND" title="NAND"><img src="/Rasta-summerschool403-hardware/games/LogicGatesTraine/nand.png" alt="NAND" /></div>
+          <div class="pick" data-gate="AND"  title="AND"><img src="/Rasta-summerschool403-hardware/games/LogicGatesTraine/and.png"  alt="AND" /></div>
+          <div class="pick" data-gate="OR"   title="OR"><img src="/Rasta-summerschool403-hardware/games/LogicGatesTraine/or.png"   alt="OR" /></div>
+          <div class="pick" data-gate="NOR"  title="NOR"><img src="/Rasta-summerschool403-hardware/games/LogicGatesTraine/nor.png"  alt="NOR" /></div>
         </div>
       </div>
     </div>
@@ -104,7 +104,13 @@
       const inputs = { a: 0, b: 0 };
       function expectedSum(a, b) { return a ^ b; } // XOR
 
-      const gatePaths = { AND:"and.png", OR:"or.png", XOR:"xor.png", NAND:"nand.png", NOR:"nor.png" };
+      const gatePaths = {
+        AND:"/Rasta-summerschool403-hardware/games/LogicGatesTraine/and.png",
+        OR:"/Rasta-summerschool403-hardware/games/LogicGatesTraine/or.png",
+        XOR:"/Rasta-summerschool403-hardware/games/LogicGatesTraine/xor.png",
+        NAND:"/Rasta-summerschool403-hardware/games/LogicGatesTraine/nand.png",
+        NOR:"/Rasta-summerschool403-hardware/games/LogicGatesTraine/nor.png"
+      };
 
       // global state
       window.__gatePath__ = null;
