@@ -1,39 +1,42 @@
-/**
- * Any CSS included here will be global. The classic template
- * bundles Infima by default. Infima is a CSS framework designed to
- * work well for content-centric websites.
- */
+@import "@fontsource/vazirmatn/index.css";
 
- @import "@fontsource/vazirmatn/index.css";
-
-/* You can override the default Infima variables here. */
 :root {
-  --ifm-font-family-base: "Vazirmatn", sans-serif;
-  --ifm-color-primary: #2e8555;
-  --ifm-color-primary-dark: #29784c;
-  --ifm-color-primary-darker: #277148;
-  --ifm-color-primary-darkest: #205d3b;
-  --ifm-color-primary-light: #33925d;
-  --ifm-color-primary-lighter: #359962;
-  --ifm-color-primary-lightest: #3cad6e;
-  --ifm-code-font-size: 95%;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
+  --ifm-font-family-base: "Vazirmatn", Tahoma, sans-serif;
+  --ifm-heading-font-family: "Vazirmatn", Tahoma, sans-serif;
+  --ifm-color-primary: #17587a;
+  --ifm-color-primary-dark: #144f6e;
+  --ifm-color-primary-darker: #134a67;
+  --ifm-color-primary-darkest: #0f3d55;
+  --ifm-color-primary-light: #1a6186;
+  --ifm-color-primary-lighter: #1b668d;
+  --ifm-color-primary-lightest: #1f74a0;
+  --ifm-navbar-height: 68px;
+  --ifm-navbar-shadow: none;
+  --ifm-background-color: #fff;
+  --workshop-paper: #fff;
+  --workshop-ink: #162233;
+  --workshop-muted: #657080;
+  --workshop-blue: #17587a;
+  --workshop-coral: #d65c42;
+  --workshop-sun: #e6ac48;
+  --workshop-rule: rgba(22, 34, 51, 0.16);
 }
 
-/* For readability concerns, you should choose a lighter palette in dark mode. */
-[data-theme='dark'] {
-  --ifm-color-primary: #25c2a0;
-  --ifm-color-primary-dark: #21af90;
-  --ifm-color-primary-darker: #1fa588;
-  --ifm-color-primary-darkest: #1a8870;
-  --ifm-color-primary-light: #29d5b0;
-  --ifm-color-primary-lighter: #32d8b4;
-  --ifm-color-primary-lightest: #4fddbf;
-  --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+html { scroll-behavior: smooth; background: #fff; }
+body { color: var(--workshop-ink); background: #fff; }
+
+.navbar {
+  border-bottom: 1px solid var(--workshop-rule);
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(14px);
 }
 
-/* Add left/right padding */
-.theme-doc-markdown {
-  padding-left: 4rem;
-  padding-right: 4rem;
+.navbar__brand, .navbar__link { color: var(--workshop-ink); font-weight: 800; }
+.navbar__logo img { filter: grayscale(1) contrast(1.25); }
+.main-wrapper { background: var(--workshop-paper); }
+*:focus-visible { outline: 3px solid var(--workshop-sun); outline-offset: 3px; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }

@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>مدار لچ SR</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.2/p5.min.js"></script>
+    <script src="/Rasta-summerschool403-hardware/vendor/p5.min.js"></script>
     <style>
       @font-face { font-family: Vazir; src: url(https://cdn.fontcdn.ir/Font/Persian/Vazir/Vazir.woff) format("woff"); font-display: swap; }
       html, body { height: 100%; }
@@ -34,7 +34,7 @@
       const RED   = [242, 80, 58];
       const BLACK = [0, 0, 0];
 
-      let state = { a: 0, b: 0, q: 0 }; // A = Set/Enable, B = Gate, Q = output
+      let state = { a: 0, b: 0, q: 0 }; // A = Set, B = Reset, Q = output
 
       function fit(p, parentId, baseW = 900, baseH = 520) {
         const r = document.getElementById(parentId).getBoundingClientRect();
@@ -48,11 +48,12 @@
         const BW = 900, BH = 520;
         let view = { s: 1, ox: 0, oy: 0 };
         let hbInA = null, hbInB = null;
-        let orGateImg, andGateImg;
+        let orGateImg, notGateImg, andGateImg;
 
         p.preload = () => {
-          orGateImg  = p.loadImage('OR.png');
-          andGateImg = p.loadImage('AND.png');
+          orGateImg  = p.loadImage('/Rasta-summerschool403-hardware/games/sr-latch/OR.png');
+          notGateImg = p.loadImage('/Rasta-summerschool403-hardware/games/sr-latch/NOT.png');
+          andGateImg = p.loadImage('/Rasta-summerschool403-hardware/games/sr-latch/AND.png');
         };
 
         p.setup = () => {
@@ -115,32 +116,38 @@
           p.translate(view.ox, view.oy);
           p.scale(view.s);
 
-          // --- Logic: Q_next = (A ∨ Q_prev) ∧ B ---
+          // --- Logic ---
           const q_prev = state.q;
-          const or_out = (state.a === 1) || (q_prev === 1); // A ∨ Q_prev
-          state.q = (or_out && (state.b === 1)) ? 1 : 0;
+          const or_out  = (state.a === 1) || (q_prev === 1); // A ∨ Q_prev
+          const not_out = !(state.b === 1);                   // ¬B
+          state.q = (or_out && not_out) ? 1 : 0;
 
           // --- Layout ---
           const nodeR = 7;
           const midY = BH / 2;
           const gatesX = BW / 2 - 100;
 
-          const inputBoxA = { x: 100, y: midY - 90 + 2, w: 42, h: 42 };
-          const inputBoxB = { x: 100, y: midY + 13,     w: 42, h: 42 };
+          const inputBoxA = { x: 100, y: midY - 90 + 2,  w: 42, h: 42 };
+          const inputBoxB = { x: 100, y: midY + 125, w: 42, h: 42 };
 
           const orGate  = { x: gatesX,       y: midY - 120, w: 140, h: 105 };
+          const notGate = { x: gatesX + 25,  y: midY + 50,  w: 150, h: 150 };
           const andGate = { x: gatesX + 220, y: midY - 60,  w: 140, h: 105 };
 
           const outputBox = { x: BW - 130, y: midY - 8, w: 44, h: 44 };
 
           // OR pins
-          const or_in_top = { x: orGate.x,               y: orGate.y + orGate.h * 0.3 }; // A
-          const or_in_bot = { x: orGate.x,               y: orGate.y + orGate.h * 0.7 }; // feedback Q
+          const or_in_top = { x: orGate.x,              y: orGate.y + orGate.h * 0.3 }; // A
+          const or_in_bot = { x: orGate.x,              y: orGate.y + orGate.h * 0.7 }; // feedback Q
           const or_out_pt = { x: orGate.x + orGate.w - 9, y: orGate.y + orGate.h / 2 };
 
+          // NOT pins (for B)
+          const not_in     = { x: notGate.x + 40,            y: notGate.y + notGate.h / 2 };
+          const not_out_pt = { x: notGate.x + notGate.w - 10, y: notGate.y + notGate.h / 2 };
+
           // AND pins
-          const and_in_top = { x: andGate.x + 40,             y: andGate.y + andGate.h * 0.3 };
-          const and_in_bot = { x: andGate.x + 40,             y: andGate.y + andGate.h * 0.7 };
+          const and_in_top = { x: andGate.x + 40,            y: andGate.y + andGate.h * 0.3 };
+          const and_in_bot = { x: andGate.x + 40,            y: andGate.y + andGate.h * 0.7 };
           const and_out_pt = { x: andGate.x + andGate.w - 40, y: andGate.y + andGate.h / 2 };
 
           // Feedback path geometry -> OR bottom input
@@ -156,36 +163,46 @@
 
           // Gates
           p.image(orGateImg,  orGate.x,  orGate.y,  orGate.w,  orGate.h);
+          p.image(notGateImg, notGate.x, notGate.y, notGate.w, notGate.h);
           p.image(andGateImg, andGate.x, andGate.y, andGate.w, andGate.h);
 
           // Wires with corner nodes
-          // A -> OR (top)
+          // A -> OR (top), routed with two bends
           drawWire([
             { x: inputBoxA.x + inputBoxA.w, y: inputBoxA.y },
             { x: or_in_top.x + 40,          y: inputBoxA.y },
             { x: or_in_top.x + 40,          y: or_in_top.y }
           ], !!state.a);
 
-          // B -> AND (bottom) — routed with a bend
+          // B -> NOT, routed with two bends
           drawWire([
             { x: inputBoxB.x + inputBoxB.w, y: inputBoxB.y },
-            { x: and_in_bot.x - 30,         y: inputBoxB.y },
+            { x: not_in.x - 30,             y: inputBoxB.y },
+            { x: not_in.x - 30,             y: not_in.y },
+            { x: not_in.x,                  y: not_in.y }
           ], !!state.b);
 
           // OR -> AND (top)
           drawWire([
-            { x: or_out_pt.x,  y: or_out_pt.y },
-            { x: or_out_pt.x,  y: and_in_top.y },
+            { x: or_out_pt.x, y: or_out_pt.y },
+            { x: or_out_pt.x, y: and_in_top.y },
             { x: and_in_top.x, y: and_in_top.y }
           ], !!or_out);
 
-          // AND -> Output
+          // NOT -> AND (bottom)
+          drawWire([
+            { x: not_out_pt.x, y: not_out_pt.y },
+            { x: not_out_pt.x, y: and_in_bot.y },
+            { x: and_in_bot.x, y: and_in_bot.y }
+          ], !!not_out);
+
+          // AND -> Output (straight; no corner node)
           drawWire([
             { x: and_out_pt.x, y: and_out_pt.y },
             { x: outputBox.x,  y: outputBox.y }
           ], !!state.q);
 
-          // Feedback Q -> OR (bottom)
+          // Feedback Q -> OR (bottom) with four bends
           drawWire([
             { x: and_out_pt.x, y: and_out_pt.y },
             { x: fb_start.x,   y: fb_start.y },
@@ -199,7 +216,7 @@
           p.noStroke(); p.fill(...(state.q ? GREEN : RED));
           p.circle(or_in_bot.x, or_in_bot.y, nodeR * 2);
 
-          // Output box
+          // Output box (border-only)
           drawOutputBox(outputBox, state.q, 'خروجی');
 
           p.pop();

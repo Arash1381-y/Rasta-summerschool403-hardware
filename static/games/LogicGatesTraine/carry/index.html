@@ -27,15 +27,14 @@
         gap: var(--gap);
         align-items: center;
         justify-content: center;   /* centered on wide screens */
-        flex-wrap: nowrap;         /* stay in one row always */
+        flex-wrap: nowrap;         /* keep single row */
       }
-      /* Two panels that shrink without causing horizontal scroll.
-         aspect-ratio keeps height proportional to width. */
+      /* shrink without horizontal scroll on narrow screens */
       .body {
         flex: 1 1 0;
-        min-width: 0;              /* allow shrinking below intrinsic size */
-        max-width: 410px;          /* cap on large screens */
-        aspect-ratio: 1 / 1;       /* height auto-scales with width */
+        min-width: 0;
+        max-width: 410px;
+        aspect-ratio: 1 / 1;       /* height follows width */
         height: auto;
       }
 
@@ -73,11 +72,11 @@
         <button id="closeModal" class="close">✕</button>
         <div style="text-align: center; margin: 6px 0 10px 0; font-weight: 700">یک گیت انتخاب کنید</div>
         <div class="grid">
-          <div class="pick" data-gate="XOR"  title="XOR"><img src="xor.png"  alt="XOR" /></div>
-          <div class="pick" data-gate="NAND" title="NAND"><img src="nand.png" alt="NAND" /></div>
-          <div class="pick" data-gate="AND"  title="AND"><img src="and.png"  alt="AND" /></div>
-          <div class="pick" data-gate="OR"   title="OR"><img src="or.png"   alt="OR" /></div>
-          <div class="pick" data-gate="NOR"  title="NOR"><img src="nor.png"  alt="NOR" /></div>
+          <div class="pick" data-gate="XOR"  title="XOR"><img src="../xor.png"  alt="XOR" /></div>
+          <div class="pick" data-gate="NAND" title="NAND"><img src="../nand.png" alt="NAND" /></div>
+          <div class="pick" data-gate="AND"  title="AND"><img src="../and.png"  alt="AND" /></div>
+          <div class="pick" data-gate="OR"   title="OR"><img src="../or.png"   alt="OR" /></div>
+          <div class="pick" data-gate="NOR"  title="NOR"><img src="../nor.png"  alt="NOR" /></div>
         </div>
       </div>
     </div>
@@ -95,14 +94,18 @@
         return { s, ox, oy, w, h, baseW, baseH };
       }
       const GREEN = [46, 204, 113], RED = [242, 80, 58];
+
+      // Truth table for AND
       const tableRows = [
         { a: 0, b: 0, s: 0 },
-        { a: 1, b: 0, s: 1 },
-        { a: 0, b: 1, s: 1 },
-        { a: 1, b: 1, s: 0 },
+        { a: 1, b: 0, s: 0 },
+        { a: 0, b: 1, s: 0 },
+        { a: 1, b: 1, s: 1 },
       ];
       const inputs = { a: 0, b: 0 };
-      function expectedSum(a, b) { return a ^ b; } // XOR
+
+      // C = A AND B
+      function expectedC(a, b) { return a & b; }
 
       const gatePaths = { AND:"and.png", OR:"or.png", XOR:"xor.png", NAND:"nand.png", NOR:"nor.png" };
 
@@ -134,11 +137,11 @@
       }
       function setResultMessage(gate) {
         const el = document.getElementById("resultMsg");
-        if (gate === "XOR") {
+        if (gate === "AND") {
           el.textContent = "آفرین! پاسخ صحیح است";
           el.className = "result ok";
         } else if (gate) {
-          el.textContent = ""; // فقط هایلایت
+          el.textContent = "";
           el.className = "result warn";
         } else {
           el.textContent = "";
@@ -173,22 +176,28 @@
             }
           }
 
-          function drawIOBox(x, y, w, h, val, label) {
+          function drawIOBox(x, y, w, h, val, label, withSubscript=false, subscript="") {
             const col = val ? [46, 204, 113] : [242, 80, 58];
             p.noStroke(); p.fill(...col); p.rect(x, y, w, h, 10);
             p.fill(255); p.textSize(Math.min(h * 0.8, 20)); p.text(val, x + w / 2, y + h / 2 + 1);
             p.fill(50); p.textSize(Math.min(h, 20)); p.text(label, x + w / 2, y - 12);
+
+            if (withSubscript) {
+              // subscript "out"
+              p.push();
+              p.textSize(10); // smaller font for subscript
+              p.text(subscript, x + w / 2 + 14, y - 5); // slight right and down offset
+              p.pop();
+            }
           }
 
           function dashedRectColored(x, y, w, h, r, strokeRGB, fillRGBA) {
             const ctx = p.drawingContext;
             if (fillRGBA) { p.noStroke(); p.fill(...fillRGBA); p.rect(x, y, w, h, r); }
-            ctx.save();
-            ctx.setLineDash([5, 5]);
+            ctx.save(); ctx.setLineDash([5, 5]);
             p.noFill();
             if (strokeRGB) p.stroke(...strokeRGB); else p.stroke(0);
-            p.strokeWeight(1.5);
-            p.rect(x, y, w, h, r);
+            p.strokeWeight(1.5); p.rect(x, y, w, h, r);
             ctx.restore();
           }
 
@@ -233,8 +242,8 @@
 
             drawIOBox(leftX, aY - ioSize / 2, ioSize, ioSize, inputs.a, "A");
             drawIOBox(leftX, bY - ioSize / 2, ioSize, ioSize, inputs.b, "B");
-            const sumVal = expectedSum(inputs.a, inputs.b);
-            drawIOBox(rightX - ioSize, sY - ioSize / 2, ioSize, ioSize, sumVal, "S");
+            const cVal = expectedC(inputs.a, inputs.b);
+            drawIOBox(rightX - ioSize, sY - ioSize / 2, ioSize, ioSize, cVal, "C", true, "out");
 
             if (gateImg) p.image(gateImg, gX, gY, gW, gH);
 
@@ -242,7 +251,7 @@
             const gate = window.__selectedGate__;
             const mism = Array.isArray(window.__mismatches__) ? window.__mismatches__ : [];
             if (gate) {
-              const correct = gate === "XOR" && mism.length === 0;
+              const correct = gate === "AND" && mism.length === 0;
               if (correct) { strokeCol = [22,163,74]; fillCol = [22,163,74,40]; }
               else { strokeCol = [220,38,38]; fillCol = [220,38,38,40]; }
             }
@@ -300,10 +309,17 @@
             p.fill(0); p.textSize(18);
             p.text("A", cA, startY - 17);
             p.text("B", cB, startY - 17);
-            p.text("S", cS, startY - 17);
+            p.text("C", cS, startY - 17);
+            p.text("C", cS, startY - 17);
+
+            // subscript "out"
+            p.push();
+            p.textSize(10); // smaller font for subscript
+            p.text("out", cS + 12, startY - 12); // slight right and down offset
+            p.pop();
 
             p.stroke(0); p.strokeWeight(1);
-            p.line(cA - 12, startY - 8, cS + 12, startY - 8);
+            p.line(cA - 12, startY - 7, cS + 14, startY - 7);
 
             const yTop = startY - 30, yBot = startY + 3 * rowGap + cellH + 10;
             p.line((cA + cB) / 2, yTop, (cA + cB) / 2, yBot);

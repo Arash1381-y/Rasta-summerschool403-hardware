@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>شبیه‌ساز فلیپ‌فلاپ D</title>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      background: #fff;
+      font-family: "Vazirmatn", sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .wrap {
+      display: flex;
+      flex-direction: row;
+      gap: 20px;
+      max-width: 1200px;
+      width: 100%;
+      padding: 10px;
+    }
+    .card {
+      flex: 1 1 auto;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .card-head {
+      padding: 8px;
+      font-size: 1rem;
+      text-align: center;
+      border-bottom: 1px solid #eee;
+    }
+    .card-body {
+      flex: 1;
+      padding: 0;
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: manipulation;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <div class="card-head">عملکرد دو لچ</div>
+      <div class="card-body"><canvas id="schematic"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-head">نمودار زمانی</div>
+      <div class="card-body"><canvas id="waveform"></canvas></div>
+    </div>
+  </div>
+
+<script>
+let clk = 0, D = 0, Q = 0, masterQ = 0;
+let schematic = document.getElementById("schematic");
+let waveform = document.getElementById("waveform");
+
+let signals = { clk: [], nclk: [], D: [], Q: [] };
+
+const BASE_W_SCHEM = 520, BASE_H_SCHEM = 280;
+const BASE_W_WAVE = 700, BASE_H_WAVE = 260;
+
+const hitboxes = { data: {x:20, y:80, w:40, h:40} };
+
+let schematicTransform = {s:1, ox:0, oy:0};
+
+// ---------- helpers ----------
+function setupContext(canvas, baseW, baseH, isSchematic=false) {
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width = rect.width * dpr;
+  canvas.height = rect.height * dpr;
+  const ctx = canvas.getContext("2d");
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.scale(dpr, dpr);
+
+  const sx = rect.width / baseW;
+  const sy = rect.height / baseH;
+  const s = Math.min(sx, sy);
+  const ox = (rect.width - baseW * s) / 2;
+  const oy = (rect.height - baseH * s) / 2;
+
+  ctx.translate(ox, oy);
+  ctx.scale(s, s);
+
+  if (isSchematic) schematicTransform = {s, ox, oy, rect};
+  return ctx;
+}
+
+function getRelativeCoords(event, transform, baseW, baseH) {
+  const rect = transform.rect;
+  let clientX, clientY;
+  if (event.touches && event.touches.length > 0) {
+    clientX = event.touches[0].clientX;
+    clientY = event.touches[0].clientY;
+  } else {
+    clientX = event.clientX;
+    clientY = event.clientY;
+  }
+  const x = (clientX - rect.left - transform.ox) / transform.s;
+  const y = (clientY - rect.top - transform.oy) / transform.s;
+  return {x, y};
+}
+
+// ---------- schematic ----------
+function drawSchematic() {
+  const ctx = setupContext(schematic, BASE_W_SCHEM, BASE_H_SCHEM, true);
+  ctx.clearRect(0, 0, BASE_W_SCHEM, BASE_H_SCHEM);
+  ctx.lineWidth = 2;
+  ctx.font = "16px Vazirmatn";
+
+  // داده (clickable)
+  ctx.strokeStyle = "black";
+  ctx.strokeRect(hitboxes.data.x, hitboxes.data.y, hitboxes.data.w, hitboxes.data.h);
+  ctx.fillText("داده", 20, 70);
+  ctx.fillStyle = D ? "limegreen" : "lightgray";
+  ctx.fillRect(hitboxes.data.x, hitboxes.data.y, hitboxes.data.w, hitboxes.data.h);
+  ctx.fillStyle = "black";
+  ctx.fillText(D, 35, 105);
+
+  // کلاک
+  ctx.strokeStyle = "black";
+  ctx.strokeRect(20, 180, 40, 40);
+  ctx.fillText("کلاک", 20, 240);
+  ctx.fillStyle = clk ? "limegreen" : "lightgray";
+  ctx.fillRect(20, 180, 40, 40);
+  ctx.fillStyle = "black";
+  ctx.fillText(clk, 35, 207);
+
+  // NOT gate (branch goes up)
+  ctx.strokeStyle = "black";
+  ctx.beginPath();
+  ctx.moveTo(80, 140);
+  ctx.lineTo(100, 150);
+  ctx.lineTo(80, 160);
+  ctx.closePath();
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(105, 150, 5, 0, Math.PI*2);
+  ctx.stroke();
+
+  // Master latch
+  ctx.strokeStyle = "black";
+  ctx.strokeRect(150, 60, 120, 100);
+  ctx.fillText("دی لچ", 190, 110);
+
+  // Slave latch
+  ctx.strokeStyle = "black";
+  ctx.strokeRect(320, 60, 120, 100);
+  ctx.fillText("دی لچ", 360, 110);
+
+  // خروجی
+  ctx.strokeStyle = "blue";
+  ctx.strokeRect(470, 90, 40, 40);
+  ctx.fillStyle = "black";
+  ctx.fillText(Q, 485, 117);
+  ctx.fillText("خروجی", 460, 80);
+
+  // wires
+  ctx.strokeStyle = "green";
+  ctx.beginPath();
+  // D → Master
+  ctx.moveTo(60, 100); ctx.lineTo(150, 100);
+  // Master → Slave
+  ctx.moveTo(270, 100); ctx.lineTo(320, 100);
+  // Slave → Q
+  ctx.moveTo(440, 110); ctx.lineTo(470, 110);
+
+  // Clock main line → Slave
+  ctx.moveTo(60, 200); ctx.lineTo(320, 200);
+
+  // Branch upward to NOT
+  ctx.moveTo(60, 200); ctx.lineTo(60, 150); // up
+  ctx.lineTo(80, 150);                      // into NOT
+  // NOT → Master
+  ctx.moveTo(110, 150); ctx.lineTo(150, 150);
+
+  // Connect clock into Slave at y=200 → up to latch
+  ctx.moveTo(320, 200); ctx.lineTo(320, 150);
+  ctx.stroke();
+}
+
+// ---------- behavior ----------
+function updateFlipFlop() {
+  let nclk = clk ? 0 : 1;
+  if (nclk === 1) masterQ = D;   // master open when !CLK=1
+  if (clk === 1) Q = masterQ;    // slave open when CLK=1
+  drawSchematic();
+}
+
+function handleInput(event) {
+  const {x, y} = getRelativeCoords(event, schematicTransform, BASE_W_SCHEM, BASE_H_SCHEM);
+  if (x >= hitboxes.data.x && x <= hitboxes.data.x + hitboxes.data.w &&
+      y >= hitboxes.data.y && y <= hitboxes.data.y + hitboxes.data.h) {
+    D = D ? 0 : 1;
+  }
+  updateFlipFlop();
+  event.preventDefault?.();
+}
+
+schematic.addEventListener("click", handleInput);
+schematic.addEventListener("touchstart", handleInput, { passive: false });
+
+// ---------- waveforms ----------
+function drawWaveforms() {
+  const ctx = setupContext(waveform, BASE_W_WAVE, BASE_H_WAVE);
+  ctx.clearRect(0, 0, BASE_W_WAVE, BASE_H_WAVE);
+
+  ctx.fillStyle = "black";
+  ctx.font = "16px Vazirmatn";
+  ctx.fillText("کلاک", 10, 35);
+  ctx.fillText("!کلاک", 10, 85);
+  ctx.fillText("داده", 10, 135);
+  ctx.fillText("خروجی", 10, 185);
+
+  drawSignal(ctx, signals.clk,   20, "purple");
+  drawSignal(ctx, signals.nclk,  70, "orange");
+  drawSignal(ctx, signals.D,    120, "red");
+  drawSignal(ctx, signals.Q,    170, "green");
+}
+
+function drawSignal(ctx, data, y, color) {
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  if (data.length === 0) return;
+
+  let prevVal = data[0];
+  let level = prevVal ? y - 20 : y;
+  ctx.moveTo(0, level);
+
+  for (let i = 1; i < data.length; i++) {
+    const x = i;
+    const val = data[i];
+    let newLevel = val ? y - 20 : y;
+
+    ctx.lineTo(x, level);
+    if (val !== prevVal) {
+      ctx.lineTo(x, newLevel);
+      prevVal = val;
+    }
+    level = newLevel;
+  }
+  ctx.stroke();
+}
+
+// ---------- loop ----------
+let lastClockToggle = performance.now();
+const CLOCK_PERIOD = 2000; // 2s
+
+function tick(timestamp) {
+  if (timestamp - lastClockToggle >= CLOCK_PERIOD / 2) {
+    clk = clk ? 0 : 1;
+    lastClockToggle = timestamp;
+  }
+
+  updateFlipFlop();
+  let nclk = clk ? 0 : 1;
+  signals.clk.push(clk);
+  signals.nclk.push(nclk);
+  signals.D.push(D);
+  signals.Q.push(Q);
+
+  if (signals.clk.length > BASE_W_WAVE) {
+    signals.clk.shift();
+    signals.nclk.shift();
+    signals.D.shift();
+    signals.Q.shift();
+  }
+
+  drawWaveforms();
+  requestAnimationFrame(tick);
+}
+
+window.addEventListener("resize", () => {
+  drawSchematic();
+  drawWaveforms();
+});
+
+updateFlipFlop();
+drawWaveforms();
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

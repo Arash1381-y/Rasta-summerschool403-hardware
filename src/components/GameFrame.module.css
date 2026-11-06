@@ -1,0 +1,48 @@
+.frame {
+  margin: 2.75rem 0 3.25rem;
+  border-block: 1px solid var(--workshop-rule);
+  background: #fff;
+  overflow: hidden;
+}
+
+.toolbar {
+  min-height: 74px;
+  padding: 0.85rem 1rem 0.85rem 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px solid var(--workshop-rule);
+  background: #fff;
+}
+
+.identity { display: flex; align-items: center; gap: 0.8rem; min-width: 0; }
+.identity small, .identity strong { display: block; }
+.identity small { color: var(--workshop-muted); font-size: 0.72rem; }
+.identity strong { color: var(--workshop-ink); font-size: 1rem; }
+
+.status {
+  width: 12px;
+  height: 12px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: var(--workshop-coral);
+  box-shadow: 0 0 0 6px rgba(214, 92, 66, 0.12);
+}
+
+.viewport {
+  position: relative;
+  min-height: min(var(--game-height), 80vh);
+  background: #fff;
+}
+
+.viewport iframe { display: block; width: 100%; height: var(--game-height); border: 0; background: #fff; }
+
+.linkBar { padding: .75rem 1rem; border-top: 1px solid var(--workshop-rule); overflow-wrap: anywhere; text-align: left; }
+.linkBar a { color: var(--workshop-blue); font-size: .82rem; }
+
+@media (max-width: 700px) {
+  .frame { margin-inline: -0.7rem; }
+  .toolbar { align-items: flex-start; flex-direction: column; }
+  .viewport iframe { height: min(var(--game-height), 82vh); min-height: 420px; }
+}
